@@ -93,6 +93,31 @@
   .threads path { stroke-dasharray: var(--len); stroke-dashoffset: var(--len); animation: draw .35s ease-out forwards; }
   @keyframes draw { to { stroke-dashoffset: 0; } }
 
+  /* The tape deck. YouTube's embed rules want the player visible at 200 x 200 or more,
+     so it sits in the deck's window, toned down to match the board. */
+  .deck {
+    position: relative; z-index: 1; margin-top: 44px; display: flex; gap: 20px; align-items: stretch;
+    background: #0f0d12; border: 1px solid #ffffff1a; border-radius: 8px; padding: 16px; max-width: 640px;
+    box-shadow: 0 3px 8px #0008;
+  }
+  .window { flex: none; width: 216px; padding: 8px; background: #000; border-radius: 6px; box-shadow: inset 0 0 0 1px #ffffff14; }
+  .window iframe, #yt { display: block; width: 200px; height: 200px; border: 0; filter: sepia(.7) saturate(.8) brightness(.75) contrast(1.1); }
+  .label { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px; background: var(--paper); border-top: 3px solid var(--mustard); padding: 12px 14px; }
+  .side { font: 12px var(--type); color: var(--faint); letter-spacing: 1px; }
+  .reels { display: flex; align-items: center; gap: 0; }
+  .reels i { width: 34px; height: 34px; border-radius: 50%; border: 3px dashed var(--soft); flex: none; }
+  .reels .ribbon { flex: 1; height: 2px; background: #5a4f44; margin: 0 6px; }
+  .deck.playing .reels i { animation: spin 2.4s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .credit { margin: 0; font-size: 13px; color: var(--soft); }
+  .credit b { color: var(--text); font-weight: 600; }
+  .credit a { color: var(--mustard); }
+  .controls { margin-top: auto; display: flex; align-items: center; gap: 12px; }
+  .key { font: 13px var(--type); color: var(--text); background: #1b1820; border: 1px solid #ffffff2e; border-bottom-width: 3px; border-radius: 4px; padding: 5px 12px; cursor: pointer; }
+  .key:hover { border-color: var(--mustard); color: var(--mustard); }
+  .key:active { border-bottom-width: 1px; margin-top: 2px; }
+  .counter { font: 13px var(--type); color: var(--mustard); background: #000; padding: 3px 8px; border-radius: 3px; }
+
   @media (max-width: 860px) { .grid { grid-template-columns: repeat(2, 1fr); } }
   @media (max-width: 560px) {
     .board { padding: 24px 16px 32px; }
@@ -100,9 +125,12 @@
     .memo h1 { font-size: 26px; }
     .memo svg { display: none; }
     .tape { position: static; margin-bottom: 20px; }
+    .deck { flex-direction: column; align-items: center; }
+    .label { align-self: stretch; }
   }
   @media (prefers-reduced-motion: reduce) {
     .card, .x { transition: none; }
+    .deck.playing .reels i { animation: none; }
     .threads path { animation: none; stroke-dashoffset: 0; }
   }
 </style>
@@ -120,7 +148,6 @@
   </div>
 
   <button class="tape" type="button" aria-pressed="false" hidden>&#9654; play the tape</button>
-  <audio id="tape" src="sound/tape.mp3" preload="none" loop></audio>
 
   <ul class="grid">
     <li class="card" data-g="dgg" style="--r:-1.4deg;--c:var(--coral)">
@@ -202,6 +229,19 @@
     </li>
   </ul>
 
+  <section class="deck" aria-label="Music">
+    <div class="window"><div id="yt"></div></div>
+    <div class="label">
+      <div class="side">SIDE A</div>
+      <div class="reels" aria-hidden="true"><i></i><span class="ribbon"></span><i></i></div>
+      <p class="credit"><b>&ldquo;Utopia Finale&rdquo;</b> by Cristobal Tapia de Veer, from <i>Utopia</i> (Original Television Soundtrack), Silva Screen Records, 2013. Played from <a href="https://www.youtube.com/watch?v=9dqV03K0brQ">YouTube</a>.</p>
+      <div class="controls">
+        <button class="key" type="button" data-act="toggle" aria-pressed="false">&#9654; play</button>
+        <span class="counter" aria-live="off">0:25</span>
+      </div>
+    </div>
+  </section>
+
   <footer>Report sightings: <a href="https://github.com/StrawWaffle">github.com/StrawWaffle</a></footer>
   <svg class="threads" aria-hidden="true"></svg>
 </main>
@@ -240,17 +280,48 @@
     card.addEventListener('click', e => { if (!e.target.closest('a')) card.classList.toggle('open'); });
   });
 
-  // The tape starts 25 s into the track (the file is already trimmed) and loops
-  const audio = document.getElementById('tape');
-  const button = document.querySelector('.tape');
-  fetch(audio.getAttribute('src'), { method: 'HEAD' }).then(r => { if (r.ok) button.hidden = false; }).catch(() => {});
-  audio.volume = 0.5;
-  button.addEventListener('click', () => {
-    const on = audio.paused;
-    if (on) audio.play(); else audio.pause();
-    button.setAttribute('aria-pressed', String(on));
-    button.innerHTML = on ? '&#10074;&#10074; stop the tape' : '&#9654; play the tape';
-  });
+  // The tape: "Utopia Finale" from YouTube, from 25 s in, looping back to 25 s, at half volume.
+  // It tries to start on its own; if the browser blocks that, either button starts it.
+  const VIDEO = '9dqV03K0brQ', START = 25;
+  const deck = document.querySelector('.deck');
+  const remote = document.querySelector('.tape');
+  const key = deck.querySelector('.key');
+  const counter = deck.querySelector('.counter');
+  let player, playing = false;
+
+  const show = on => {
+    playing = on;
+    deck.classList.toggle('playing', on);
+    for (const b of [remote, key]) b.setAttribute('aria-pressed', String(on));
+    remote.innerHTML = on ? '&#10074;&#10074; stop the tape' : '&#9654; play the tape';
+    key.innerHTML = on ? '&#10074;&#10074; stop' : '&#9654; play';
+  };
+  const toggle = () => { if (!player) return; playing ? player.pauseVideo() : player.playVideo(); };
+  remote.addEventListener('click', toggle);
+  key.addEventListener('click', toggle);
+
+  window.onYouTubeIframeAPIReady = () => {
+    player = new YT.Player('yt', {
+      host: 'https://www.youtube-nocookie.com',
+      videoId: VIDEO, width: 200, height: 200,
+      playerVars: { start: START, autoplay: 1, controls: 0, disablekb: 1, playsinline: 1, rel: 0, iv_load_policy: 3 },
+      events: {
+        onReady: e => { e.target.setVolume(50); e.target.playVideo(); remote.hidden = false; },
+        onStateChange: e => {
+          if (e.data === YT.PlayerState.ENDED) { player.seekTo(START, true); player.playVideo(); return; }
+          show(e.data === YT.PlayerState.PLAYING || e.data === YT.PlayerState.BUFFERING);
+        },
+      },
+    });
+  };
+  setInterval(() => {
+    if (!player || !player.getCurrentTime) return;
+    const t = Math.floor(player.getCurrentTime() || START);
+    counter.textContent = `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`;
+  }, 500);
+  const api = document.createElement('script');
+  api.src = 'https://www.youtube.com/iframe_api';
+  document.head.append(api);
 </script>
 </body>
 </html>

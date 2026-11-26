@@ -6,137 +6,251 @@
 <title>StrawWaffle</title>
 <link rel="icon" type="image/png" href="/favicon.png">
 <meta name="description" content="Projects by StrawWaffle: destiny.gg tools, OBS overlays and data pages.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Special+Elite&display=swap" rel="stylesheet">
 <style>
   :root {
-    --page: #121212;
-    --surface: #1c1c1c;
-    --line: #2c2c2c;
-    --text: #e8e8e8;
-    --muted: #8a8a8a;
-    --accent: #4cb383;
+    --page: #16131a;
+    --paper: #26212b;
+    --text: #ece3d2;
+    --soft: #bfb5a5;
+    --faint: #8c8274;
+    --coral: #ff8a6e;
+    --mustard: #f2c14e;
+    --teal: #3fb8b0;
+    --lavender: #b9a2f0;
+    --pink: #f7a8c0;
+    --thread: #e0483a;
+    --type: 'Special Elite', 'Courier New', monospace;
+    --hand: 'Caveat', cursive;
     color-scheme: dark;
   }
   * { box-sizing: border-box; }
+  html { background: var(--page); }
   body {
     margin: 0;
-    background: var(--page);
+    min-height: 100vh;
+    background: var(--page) radial-gradient(#ffffff0a 1px, transparent 1.2px) 0 0 / 6px 6px;
     color: var(--text);
-    font: 15px/1.5 system-ui, -apple-system, sans-serif;
+    font: 15px/1.45 system-ui, -apple-system, sans-serif;
   }
-  main { max-width: 760px; margin: 0 auto; padding: 32px 20px 48px; }
-  h1 { font-size: 22px; margin: 0 0 4px; }
-  .intro { color: var(--muted); margin: 0 0 24px; }
-  h2 { font-size: 13px; font-weight: 600; color: var(--muted); margin: 28px 0 0; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
-  ul { list-style: none; margin: 0; padding: 0; }
-  li { display: flex; gap: 16px; align-items: flex-start; padding: 16px 0; border-bottom: 1px solid var(--line); }
-  .icon { flex: none; width: 48px; height: 48px; object-fit: contain; border-radius: 10px; }
-  .icon.pixel { image-rendering: pixelated; }
-  h3 { font-size: 16px; margin: 0; }
-  h3 a { color: var(--text); text-decoration: none; }
-  h3 a:hover { color: var(--accent); }
-  p { margin: 4px 0 8px; color: var(--muted); }
-  .links { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 14px; }
-  .links a { color: var(--accent); text-decoration: none; }
-  .links a:hover { text-decoration: underline; }
-  footer { color: var(--muted); font-size: 13px; margin-top: 24px; }
-  footer a { color: var(--muted); }
+  /* The light that follows the cursor; the board falls into shadow away from it */
+  .lamp {
+    position: fixed; inset: 0; pointer-events: none; z-index: 4;
+    background: radial-gradient(circle 340px at var(--mx, 30%) var(--my, 18%), #0000 0, #0000 40%, #00000059 100%);
+  }
+  @media (hover: none), (pointer: coarse) { .lamp { display: none; } }
+
+  .board { position: relative; max-width: 980px; margin: 0 auto; padding: 36px 20px 40px; }
+
+  .memo { display: flex; gap: 16px; align-items: flex-start; max-width: 640px; margin-bottom: 36px; font: 15px/1.55 var(--type); color: #cfc5b4; }
+  .memo svg { flex: none; margin-top: 4px; }
+  .memo h1 { font: 32px var(--type); color: var(--text); margin: 0 0 2px; letter-spacing: 1px; }
+  .file { font-size: 12px; color: var(--faint); margin-bottom: 6px; }
+  .memo p { margin: 0; }
+
+  .tape {
+    position: absolute; top: 36px; right: 20px;
+    font: 13px var(--type); color: var(--faint);
+    background: none; border: 1px dashed #ffffff33; border-radius: 4px;
+    padding: 6px 10px; cursor: pointer;
+  }
+  .tape:hover, .tape[aria-pressed="true"] { color: var(--mustard); border-color: var(--mustard); }
+  .tape[hidden] { display: none; }
+
+  /* Redacted words: blacked out until you look closer */
+  .x { background: #000; color: transparent; padding: 0 2px; border-radius: 1px; transition: background .2s, color .2s; }
+  .card:hover .x, .card:focus-within .x, .card.open .x, .memo:hover .x { background: #ffffff14; color: var(--mustard); }
+
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px 20px; position: relative; z-index: 1; list-style: none; margin: 0; padding: 0; }
+  .card {
+    position: relative; background: var(--paper); border-top: 3px solid var(--c);
+    padding: 18px 14px 0; transform: rotate(var(--r)); box-shadow: 0 3px 8px #0008;
+    transition: transform .15s;
+  }
+  .card:hover, .card:focus-within { transform: rotate(0) scale(1.03); z-index: 3; }
+  .pin { position: absolute; top: -8px; left: 50%; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; background: var(--c); box-shadow: 0 2px 3px #000a; }
+  .ex { position: absolute; top: 10px; right: 10px; font: 11px var(--type); color: var(--faint); }
+  .photo { display: inline-block; background: var(--text); padding: 4px 4px 12px; transform: rotate(-3deg); margin-bottom: 8px; box-shadow: 0 2px 4px #0008; }
+  .photo img { display: block; width: 48px; height: 48px; object-fit: contain; }
+  .photo img.pixel { image-rendering: pixelated; }
+  .card h2 { font: 19px var(--type); margin: 0; }
+  .card h2 a { color: #fff6e6; text-decoration: none; }
+  .card h2 a:hover { color: var(--c); }
+  .card p { margin: 4px 0 12px; color: var(--soft); }
+  .note { display: block; font: 21px/1.1 var(--hand); color: var(--coral); margin: -6px 0 10px; transform: rotate(-2deg); }
+  .stamp { position: absolute; right: 12px; top: 50px; border: 2px solid currentColor; padding: 2px 6px; font: 12px var(--type); letter-spacing: 1px; transform: rotate(var(--sr)); opacity: .75; }
+  .tabs { display: flex; margin: 0 -14px; border-top: 1px dashed #ffffff26; }
+  .tabs a { flex: 1; text-align: center; padding: 9px 2px; font: 13px var(--type); color: var(--c); text-decoration: none; border-left: 1px dashed #ffffff26; }
+  .tabs a:first-child { border-left: 0; }
+  .tabs a:hover { background: #ffffff0d; }
+
+  footer { margin-top: 34px; font: 13px var(--type); color: var(--faint); position: relative; z-index: 1; }
+  footer a { color: var(--text); }
+
+  .threads { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
+  .threads path { stroke-dasharray: var(--len); stroke-dashoffset: var(--len); animation: draw .35s ease-out forwards; }
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+
+  @media (max-width: 860px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px) {
+    .board { padding: 24px 16px 32px; }
+    .grid { grid-template-columns: 1fr; gap: 26px; }
+    .memo h1 { font-size: 26px; }
+    .memo svg { display: none; }
+    .tape { position: static; margin-bottom: 20px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .card, .x { transition: none; }
+    .threads path { animation: none; stroke-dashoffset: 0; }
+  }
 </style>
 </head>
 <body>
-<main>
-  <h1>StrawWaffle</h1>
-  <p class="intro">Projects, mostly around destiny.gg and streaming.</p>
+<div class="lamp" aria-hidden="true"></div>
+<main class="board">
+  <div class="memo">
+    <svg width="42" height="42" viewBox="0 0 44 44" fill="none" stroke="#ece3d2" stroke-width="1.6" aria-hidden="true"><circle cx="22" cy="22" r="19"/><circle cx="22" cy="22" r="11"/><path d="M22 3v38M5 30h34"/><circle cx="22" cy="22" r="3" fill="#ff8a6e" stroke="none"/></svg>
+    <div>
+      <div class="file">FILE SW-0001 / FOR WHOEVER FOUND THIS</div>
+      <h1>STRAWWAFFLE</h1>
+      <p>If you are reading this, you were <span class="x">meant to</span>. The projects below are real. Most of them concern <span class="x">destiny.gg</span>. Take a tab. Tell no one. (Tell everyone.)</p>
+    </div>
+  </div>
 
-  <h2>destiny.gg</h2>
-  <ul>
-    <li>
-      <img class="icon" src="icons/glorp.png" alt="" width="48" height="48">
-      <div>
-      <h3><a href="https://strawwaffle.dev/glorp/">Glorp</a></h3>
-      <p>An unofficial destiny.gg app for Android: the site's chat, bigscreen in a native player, and a few things of its own.</p>
-      <div class="links">
+  <button class="tape" type="button" aria-pressed="false" hidden>&#9654; play the tape</button>
+  <audio id="tape" src="sound/tape.mp3" preload="none" loop></audio>
+
+  <ul class="grid">
+    <li class="card" data-g="dgg" style="--r:-1.4deg;--c:var(--coral)">
+      <i class="pin"></i><span class="ex">EXHIBIT 01</span>
+      <div class="photo"><img src="icons/glorp.png" alt=""></div>
+      <h2><a href="https://strawwaffle.dev/glorp/">Glorp</a></h2>
+      <p>An unofficial destiny.gg app for <span class="x">Android</span>: chat, bigscreen in a native player, and a few things of its own.</p>
+      <span class="note">it's already on your phone</span>
+      <span class="stamp" style="color:var(--teal);--sr:-14deg">VERIFIED</span>
+      <div class="tabs">
         <a href="https://strawwaffle.dev/glorp/">Website</a>
         <a href="https://github.com/StrawWaffle/glorp/releases/latest">Download</a>
         <a href="https://github.com/StrawWaffle/glorp">Source</a>
       </div>
-      </div>
     </li>
-    <li>
-      <img class="icon pixel" src="icons/dgg-radio.png" alt="" width="48" height="48">
-      <div>
-      <h3><a href="https://strawwaffle.dev/dgg-radio/">DGG Radio</a></h3>
-      <p>A shared music station for destiny.gg. Sign in with your destiny.gg account, queue YouTube or SoundCloud tracks and take turns in the DJ rotation; everyone hears the same song at the same time.</p>
-      <div class="links">
+    <li class="card" data-g="dgg" style="--r:1.1deg;--c:var(--mustard)">
+      <i class="pin"></i><span class="ex">EXHIBIT 02</span>
+      <div class="photo"><img class="pixel" src="icons/dgg-radio.png" alt=""></div>
+      <h2><a href="https://strawwaffle.dev/dgg-radio/">DGG Radio</a></h2>
+      <p>A shared music station. Queue YouTube or SoundCloud tracks and take turns as <span class="x">the DJ</span>.</p>
+      <span class="note">everyone hears the same song. EVERYONE.</span>
+      <div class="tabs">
         <a href="https://strawwaffle.dev/dgg-radio/">Listen</a>
         <a href="https://github.com/StrawWaffle/dgg-radio">Source</a>
       </div>
-      </div>
     </li>
-    <li>
-      <img class="icon" src="icons/dgg-karaoke.png" alt="" width="48" height="48">
-      <div>
-      <h3><a href="https://strawwaffle.dev/dgg-karaoke/">DGG Karaoke</a></h3>
-      <p>Karaoke in the browser for destiny.gg, built on AllKaraoke. Sing with a microphone or your phone, add community songs, and sign in with your destiny.gg account to get on the leaderboards.</p>
-      <div class="links">
+    <li class="card" data-g="dgg" style="--r:-.6deg;--c:var(--teal)">
+      <i class="pin"></i><span class="ex">EXHIBIT 03</span>
+      <div class="photo"><img src="icons/dgg-karaoke.png" alt=""></div>
+      <h2><a href="https://strawwaffle.dev/dgg-karaoke/">DGG Karaoke</a></h2>
+      <p>Karaoke in the browser. Sing with a microphone or your phone, and get on the <span class="x">leaderboards</span>.</p>
+      <span class="note">they keep score</span>
+      <div class="tabs">
         <a href="https://strawwaffle.dev/dgg-karaoke/">Sing</a>
         <a href="https://github.com/StrawWaffle/dgg-karaoke">Source</a>
       </div>
-      </div>
     </li>
-    <li>
-      <img class="icon" src="icons/dgg-obs-tools.png" alt="" width="48" height="48">
-      <div>
-      <h3><a href="https://github.com/StrawWaffle/dgg-obs-tools">dgg-obs-tools</a></h3>
-      <p>OBS browser sources that put destiny.gg, Kick, YouTube and Twitch chat on stream: an overlay of who is watching, and one combined chat. One small program, nothing to install.</p>
-      <div class="links">
+    <li class="card" data-g="dgg" style="--r:1.6deg;--c:var(--lavender)">
+      <i class="pin"></i><span class="ex">EXHIBIT 04</span>
+      <div class="photo"><img src="icons/dgg-obs-tools.png" alt=""></div>
+      <h2><a href="https://github.com/StrawWaffle/dgg-obs-tools">dgg-obs-tools</a></h2>
+      <p>Chat and viewer overlays for <span class="x">OBS</span>: destiny.gg, Kick, YouTube and Twitch. Nothing to install.</p>
+      <span class="stamp" style="color:var(--coral);--sr:9deg">DO NOT DISCUSS</span>
+      <div class="tabs">
         <a href="https://github.com/StrawWaffle/dgg-obs-tools/releases/latest">Download</a>
         <a href="https://github.com/StrawWaffle/dgg-obs-tools">Source</a>
       </div>
-      </div>
     </li>
-  </ul>
-
-  <h2>Streaming</h2>
-  <ul>
-    <li>
-      <img class="icon" src="icons/obs-overlays.svg" alt="" width="48" height="48">
-      <div>
-      <h3><a href="https://strawwaffle.dev/obs-overlays/">OBS overlays</a></h3>
-      <p>Overlays that run straight from a URL. Bouncing text: your text bounces around like an old DVD menu, changes colour, font or effect on each bounce, and celebrates when it hits a corner.</p>
-      <div class="links">
+    <li class="card" data-g="streaming" style="--r:-1.1deg;--c:var(--pink)">
+      <i class="pin"></i><span class="ex">EXHIBIT 05</span>
+      <div class="photo"><img src="icons/obs-overlays.svg" alt=""></div>
+      <h2><a href="https://strawwaffle.dev/obs-overlays/">OBS overlays</a></h2>
+      <p>Overlays that run from a URL. Text that bounces like an old <span class="x">DVD menu</span>.</p>
+      <div class="tabs">
         <a href="https://strawwaffle.dev/obs-overlays/bounce/">Bouncing text</a>
         <a href="https://github.com/StrawWaffle/obs-overlays">Source</a>
       </div>
-      </div>
     </li>
-  </ul>
-
-  <h2>Data</h2>
-  <ul>
-    <li>
-      <img class="icon" src="icons/tracksnarkpac.png" alt="" width="48" height="48">
-      <div>
-      <h3><a href="https://tracksnarkpac.netlify.app/">TrackSnarkPac</a></h3>
-      <p>Who donates across political YouTube channels: superchats on Pisco, Counterpoints, The Soy Pill and Lib &amp; Learn.</p>
-      <div class="links">
+    <li class="card" data-g="data" style="--r:.8deg;--c:var(--teal)">
+      <i class="pin"></i><span class="ex">EXHIBIT 06</span>
+      <div class="photo"><img src="icons/tracksnarkpac.png" alt=""></div>
+      <h2><a href="https://tracksnarkpac.netlify.app/">TrackSnarkPac</a></h2>
+      <p>Who <span class="x">donates</span> across political YouTube: superchats on Pisco, Counterpoints, The Soy Pill and Lib &amp; Learn.</p>
+      <span class="note">follow the money</span>
+      <div class="tabs">
         <a href="https://tracksnarkpac.netlify.app/">Website</a>
       </div>
-      </div>
     </li>
-    <li>
-      <img class="icon" src="icons/midterms-2026-factions.svg" alt="" width="48" height="48">
-      <div>
-      <h3><a href="https://strawwaffle.dev/midterms-2026-factions/">Moderates, progressives and the 2026 wave</a></h3>
-      <p>Did moderate or progressive Democrats drive the 2026 midterm wave? Every House, Senate and governor race against the 2024 result, with outside spending from FEC filings.</p>
-      <div class="links">
+    <li class="card" data-g="data" style="--r:-1.6deg;--c:var(--coral)">
+      <i class="pin"></i><span class="ex">EXHIBIT 07</span>
+      <div class="photo"><img src="icons/midterms-2026-factions.svg" alt=""></div>
+      <h2><a href="https://strawwaffle.dev/midterms-2026-factions/">The 2026 wave</a></h2>
+      <p>Did moderates or <span class="x">progressives</span> drive the 2026 midterms? Every race against 2024, with outside spending.</p>
+      <span class="stamp" style="color:var(--lavender);--sr:-8deg">PENDING</span>
+      <div class="tabs">
         <a href="https://strawwaffle.dev/midterms-2026-factions/">Read it</a>
         <a href="https://github.com/StrawWaffle/midterms-2026-factions">Source</a>
       </div>
-      </div>
     </li>
   </ul>
 
-  <footer><a href="https://github.com/StrawWaffle">github.com/StrawWaffle</a></footer>
+  <footer>Report sightings: <a href="https://github.com/StrawWaffle">github.com/StrawWaffle</a></footer>
+  <svg class="threads" aria-hidden="true"></svg>
 </main>
+<script>
+  const board = document.querySelector('.board');
+  const threads = board.querySelector('.threads');
+  const fine = matchMedia('(hover: hover) and (pointer: fine)').matches;
+
+  if (fine) {
+    addEventListener('pointermove', e => {
+      document.body.style.setProperty('--mx', e.clientX + 'px');
+      document.body.style.setProperty('--my', e.clientY + 'px');
+    });
+  }
+
+  // Red string between a card and the others in its group, only while you look at it
+  const pinAt = card => {
+    const b = board.getBoundingClientRect(), p = card.querySelector('.pin').getBoundingClientRect();
+    return [p.left - b.left + 6, p.top - b.top + 6];
+  };
+  board.querySelectorAll('.card').forEach(card => {
+    if (fine) {
+      card.addEventListener('mouseenter', () => {
+        const a = pinAt(card);
+        threads.innerHTML = [...board.querySelectorAll(`.card[data-g="${card.dataset.g}"]`)]
+          .filter(o => o !== card)
+          .map(o => {
+            const p = pinAt(o), mx = (a[0] + p[0]) / 2, my = Math.max(a[1], p[1]) + 24;
+            const len = Math.hypot(p[0] - a[0], p[1] - a[1]) * 1.3;
+            return `<path style="--len:${len}" d="M${a} Q${mx},${my} ${p}" fill="none" stroke="#e0483a" stroke-width="1.6"/>`;
+          }).join('');
+      });
+      card.addEventListener('mouseleave', () => { threads.innerHTML = ''; });
+    }
+    // On touch screens a tap on the card (not a link) uncovers its redactions
+    card.addEventListener('click', e => { if (!e.target.closest('a')) card.classList.toggle('open'); });
+  });
+
+  // The tape starts 25 s into the track (the file is already trimmed) and loops
+  const audio = document.getElementById('tape');
+  const button = document.querySelector('.tape');
+  fetch(audio.getAttribute('src'), { method: 'HEAD' }).then(r => { if (r.ok) button.hidden = false; }).catch(() => {});
+  audio.volume = 0.5;
+  button.addEventListener('click', () => {
+    const on = audio.paused;
+    if (on) audio.play(); else audio.pause();
+    button.setAttribute('aria-pressed', String(on));
+    button.innerHTML = on ? '&#10074;&#10074; stop the tape' : '&#9654; play the tape';
+  });
+</script>
 </body>
 </html>

@@ -93,30 +93,64 @@
   .threads path { stroke-dasharray: var(--len); stroke-dashoffset: var(--len); animation: draw .35s ease-out forwards; }
   @keyframes draw { to { stroke-dashoffset: 0; } }
 
-  /* The tape deck. YouTube's embed rules want the player visible at 200 x 200 or more,
-     so it sits in the deck's window, toned down to match the board. */
-  .deck {
-    position: relative; z-index: 1; margin-top: 44px; display: flex; gap: 20px; align-items: stretch;
-    background: #0f0d12; border: 1px solid #ffffff1a; border-radius: 8px; padding: 16px; max-width: 640px;
-    box-shadow: 0 3px 8px #0008;
+  /* The tape: a cartoon audio cassette with the YouTube player showing through its window */
+  .cassette {
+    --shell: #4a4d55; --ink: #1d1e22; --cream: #efe6d2;
+    position: fixed; right: 24px; bottom: 24px; z-index: 6; width: 360px; height: 228px;
+    background: var(--shell); border: 3px solid var(--ink); border-radius: 12px;
+    box-shadow: inset 0 3px 0 #ffffff2e, inset 0 -4px 0 #0000004d, 6px 8px 0 #00000059;
+    font: 12px var(--type); color: var(--ink); transition: transform .3s ease;
   }
-  .window { flex: none; width: 216px; padding: 8px; background: #000; border-radius: 6px; box-shadow: inset 0 0 0 1px #ffffff14; }
-  .window iframe, #yt { display: block; width: 200px; height: 200px; border: 0; filter: sepia(.7) saturate(.8) brightness(.75) contrast(1.1); }
-  .label { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px; background: var(--paper); border-top: 3px solid var(--mustard); padding: 12px 14px; }
-  .side { font: 12px var(--type); color: var(--faint); letter-spacing: 1px; }
-  .reels { display: flex; align-items: center; gap: 0; }
-  .reels i { width: 34px; height: 34px; border-radius: 50%; border: 3px dashed var(--soft); flex: none; }
-  .reels .ribbon { flex: 1; height: 2px; background: #5a4f44; margin: 0 6px; }
-  .deck.playing .reels i { animation: spin 2.4s linear infinite; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .credit { margin: 0; font-size: 13px; color: var(--soft); }
-  .credit b { color: var(--text); font-weight: 600; }
-  .credit a { color: var(--mustard); }
-  .controls { margin-top: auto; display: flex; align-items: center; gap: 12px; }
-  .key { font: 13px var(--type); color: var(--text); background: #1b1820; border: 1px solid #ffffff2e; border-bottom-width: 3px; border-radius: 4px; padding: 5px 12px; cursor: pointer; }
-  .key:hover { border-color: var(--mustard); color: var(--mustard); }
-  .key:active { border-bottom-width: 1px; margin-top: 2px; }
-  .counter { font: 13px var(--type); color: var(--mustard); background: #000; padding: 3px 8px; border-radius: 3px; }
+  .screw { position: absolute; width: 12px; height: 12px; border-radius: 50%; background: #2b2d33; border: 2px solid var(--ink); box-shadow: inset 0 1px 0 #ffffff33; }
+  .screw::after { content: ""; position: absolute; left: 2px; right: 2px; top: 3px; height: 2px; background: #6b6f78; transform: rotate(35deg); }
+  .screw.tl { top: 7px; left: 7px; } .screw.tr { top: 7px; right: 7px; }
+  .screw.bl { bottom: 7px; left: 7px; } .screw.br { bottom: 7px; right: 7px; }
+  .label {
+    position: absolute; top: 14px; left: 22px; right: 22px; height: 146px; border: 2px solid var(--ink);
+    clip-path: polygon(14px 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%, 0 14px);
+    background:
+      linear-gradient(var(--cream) 0 52px, #f39a3c 52px 66px, #ee6a4c 66px 80px, #c8423b 80px 94px, #3a3c42 94px 98px, #3fb8b0 98px 124px, #3a3c42 124px);
+  }
+  .label .lines { position: absolute; top: 8px; left: 14px; right: 14px; height: 40px; background: repeating-linear-gradient(#0000 0 12px, #b9ae98 12px 13px); }
+  .label .title { position: absolute; top: 2px; left: 18px; font: 22px/1 var(--hand); color: #2c3e7a; transform: rotate(-1.5deg); }
+  .label .side { position: absolute; top: 8px; right: 14px; font: 11px var(--type); color: #8a7f70; }
+  .window {
+    position: absolute; left: 50%; top: 58px; width: 200px; height: 52px; margin-left: -100px;
+    background: var(--ink); border-radius: 26px; display: flex; align-items: center; justify-content: space-between; padding: 0 8px;
+  }
+  .hole { width: 36px; height: 36px; border-radius: 50%; background: #d9dde3; display: grid; place-items: center; box-shadow: inset 0 2px 0 #00000040; }
+  .hole svg { width: 30px; height: 30px; }
+  .cassette.playing .hole svg { animation: spin 2.6s linear infinite; }
+  .cassette.playing .hole + .screen + .hole svg { animation-duration: 3.4s; }
+  @keyframes spin { to { transform: rotate(-360deg); } }
+  .screen { position: relative; width: 100px; height: 38px; overflow: hidden; border-radius: 4px; background: #000; }
+  .screen iframe, #yt {
+    position: absolute; left: 50%; top: 50%; width: 200px; height: 200px; margin: -100px 0 0 -100px; border: 0;
+    transform: scale(.6); pointer-events: none;
+    filter: sepia(1) hue-rotate(130deg) saturate(1.6) brightness(.85) contrast(1.05);
+  }
+  .base {
+    position: absolute; left: 62px; right: 62px; bottom: 0; height: 54px; background: #3a3c42;
+    border: 3px solid var(--ink); border-bottom: 0; clip-path: polygon(18px 0, calc(100% - 18px) 0, 100% 100%, 0 100%);
+    display: flex; align-items: center; justify-content: center; gap: 8px; padding-top: 2px;
+  }
+  .peg { position: absolute; bottom: 12px; width: 18px; height: 18px; border-radius: 50%; background: #f39a3c; border: 2px solid var(--ink); }
+  .peg.l { left: 30px; } .peg.r { right: 30px; }
+  .cassette button { font: 12px var(--type); color: var(--ink); background: var(--cream); border: 2px solid var(--ink); border-radius: 5px; box-shadow: 0 2px 0 var(--ink); padding: 1px 8px; cursor: pointer; }
+  .cassette button:active { box-shadow: 0 0 0 var(--ink); transform: translateY(2px); }
+  .counter { background: var(--ink); color: #7fe0c6; padding: 1px 6px; border-radius: 4px; }
+  /* Ejected: the cassette slides mostly off screen and stops */
+  .cassette.out { transform: translateY(calc(100% - 40px)); }
+  .cassette.out .eject { transform: rotate(180deg); }
+  .credits { margin-top: 10px; font: 12px var(--type); color: var(--faint); }
+  .credits a { color: var(--soft); }
+  /* Tablets and phones: the cassette sits at the end of the page instead of floating */
+  @media (max-width: 999px) {
+    .cassette { position: relative; right: auto; bottom: auto; margin: 44px 0 0 auto; z-index: 1; }
+    .cassette.out { transform: none; }
+    .cassette .eject { display: none; }
+  }
+  @media (max-width: 400px) { .cassette { margin: 44px auto 0; transform: scale(.92); transform-origin: top center; } }
 
   @media (max-width: 860px) { .grid { grid-template-columns: repeat(2, 1fr); } }
   @media (max-width: 560px) {
@@ -125,12 +159,10 @@
     .memo h1 { font-size: 26px; }
     .memo svg { display: none; }
     .tape { position: static; margin-bottom: 20px; }
-    .deck { flex-direction: column; align-items: center; }
-    .label { align-self: stretch; }
   }
   @media (prefers-reduced-motion: reduce) {
     .card, .x { transition: none; }
-    .deck.playing .reels i { animation: none; }
+    .cassette.playing .hole svg { animation: none; } .cassette { transition: none; }
     .threads path { animation: none; stroke-dashoffset: 0; }
   }
 </style>
@@ -229,22 +261,31 @@
     </li>
   </ul>
 
-  <section class="deck" aria-label="Music">
-    <div class="window"><div id="yt"></div></div>
-    <div class="label">
-      <div class="side">SIDE A</div>
-      <div class="reels" aria-hidden="true"><i></i><span class="ribbon"></span><i></i></div>
-      <p class="credit"><b>&ldquo;Utopia Finale&rdquo;</b> by Cristobal Tapia de Veer, from <i>Utopia</i> (Original Television Soundtrack), Silva Screen Records, 2013. Played from <a href="https://www.youtube.com/watch?v=9dqV03K0brQ">YouTube</a>.</p>
-      <div class="controls">
-        <button class="key" type="button" data-act="toggle" aria-pressed="false">&#9654; play</button>
-        <span class="counter" aria-live="off">0:25</span>
-      </div>
-    </div>
-  </section>
-
-  <footer>Report sightings: <a href="https://github.com/StrawWaffle">github.com/StrawWaffle</a></footer>
+  <footer>
+    Report sightings: <a href="https://github.com/StrawWaffle">github.com/StrawWaffle</a>
+    <div class="credits">Music: &ldquo;Utopia Finale&rdquo; by Cristobal Tapia de Veer, from <i>Utopia</i> (Original Television Soundtrack), Silva Screen Records, 2013. Played from <a href="https://www.youtube.com/watch?v=9dqV03K0brQ">YouTube</a>.</div>
+  </footer>
   <svg class="threads" aria-hidden="true"></svg>
 </main>
+<section class="cassette" aria-label="Music: Utopia Finale">
+  <i class="screw tl"></i><i class="screw tr"></i><i class="screw bl"></i><i class="screw br"></i>
+  <div class="label">
+    <div class="lines"></div>
+    <div class="title">Utopia Finale</div>
+    <div class="side">A</div>
+  </div>
+  <div class="window">
+    <div class="hole" aria-hidden="true"><svg viewBox="0 0 30 30"><circle cx="15" cy="15" r="13" fill="#fff" stroke="#1d1e22" stroke-width="2"/><circle cx="15" cy="15" r="5" fill="#1d1e22"/><path d="M15 3v5M15 22v5M4.6 9l4.3 2.5M21.1 18.5l4.3 2.5M4.6 21l4.3-2.5M21.1 11.5l4.3-2.5" stroke="#1d1e22" stroke-width="2.2" stroke-linecap="round"/></svg></div>
+    <div class="screen"><div id="yt"></div></div>
+    <div class="hole" aria-hidden="true"><svg viewBox="0 0 30 30"><circle cx="15" cy="15" r="13" fill="#fff" stroke="#1d1e22" stroke-width="2"/><circle cx="15" cy="15" r="5" fill="#1d1e22"/><path d="M15 3v5M15 22v5M4.6 9l4.3 2.5M21.1 18.5l4.3 2.5M4.6 21l4.3-2.5M21.1 11.5l4.3-2.5" stroke="#1d1e22" stroke-width="2.2" stroke-linecap="round"/></svg></div>
+  </div>
+  <i class="peg l"></i><i class="peg r"></i>
+  <div class="base">
+    <button class="key" type="button" aria-pressed="false">&#9654; play</button>
+    <span class="counter">0:25</span>
+    <button class="eject" type="button" aria-label="Eject the tape">&#9167;</button>
+  </div>
+</section>
 <script>
   const board = document.querySelector('.board');
   const threads = board.querySelector('.threads');
@@ -280,33 +321,52 @@
     card.addEventListener('click', e => { if (!e.target.closest('a')) card.classList.toggle('open'); });
   });
 
-  // The tape: "Utopia Finale" from YouTube, from 25 s in, looping back to 25 s, at half volume.
+  // The tape: "Utopia Finale" from YouTube, from 25 s in, looping back to 25 s, at 10% volume.
   // It tries to start on its own; if the browser blocks that, either button starts it.
   const VIDEO = '9dqV03K0brQ', START = 25;
-  const deck = document.querySelector('.deck');
+  const vhs = document.querySelector('.cassette');
   const remote = document.querySelector('.tape');
-  const key = deck.querySelector('.key');
-  const counter = deck.querySelector('.counter');
+  const key = vhs.querySelector('.key');
+  const counter = vhs.querySelector('.counter');
+  const eject = vhs.querySelector('.eject');
   let player, playing = false;
+  // Beside the board there's only room for the tape on wide screens. On smaller desktops it
+  // starts ejected (peeking from the corner) and doesn't start on its own; tablets and phones
+  // have it at the end of the page.
+  const floating = matchMedia('(min-width: 1000px)').matches;
+  const roomy = !floating || matchMedia('(min-width: 1760px)').matches;
+  if (!roomy) { vhs.classList.add('out'); eject.setAttribute('aria-label', 'Put the tape back'); }
 
   const show = on => {
     playing = on;
-    deck.classList.toggle('playing', on);
+    vhs.classList.toggle('playing', on);
     for (const b of [remote, key]) b.setAttribute('aria-pressed', String(on));
     remote.innerHTML = on ? '&#10074;&#10074; stop the tape' : '&#9654; play the tape';
     key.innerHTML = on ? '&#10074;&#10074; stop' : '&#9654; play';
   };
-  const toggle = () => { if (!player) return; playing ? player.pauseVideo() : player.playVideo(); };
+  const toggle = () => {
+    if (!player) return;
+    if (playing) { player.pauseVideo(); return; }
+    vhs.classList.remove('out');
+    eject.setAttribute('aria-label', 'Eject the tape');
+    player.playVideo();
+  };
   remote.addEventListener('click', toggle);
   key.addEventListener('click', toggle);
+  // Ejecting slides the tape away and stops it; pressing again puts it back
+  eject.addEventListener('click', () => {
+    const out = vhs.classList.toggle('out');
+    eject.setAttribute('aria-label', out ? 'Put the tape back' : 'Eject the tape');
+    if (out && player) player.pauseVideo();
+  });
 
   window.onYouTubeIframeAPIReady = () => {
     player = new YT.Player('yt', {
       host: 'https://www.youtube-nocookie.com',
       videoId: VIDEO, width: 200, height: 200,
-      playerVars: { start: START, autoplay: 1, controls: 0, disablekb: 1, playsinline: 1, rel: 0, iv_load_policy: 3 },
+      playerVars: { start: START, autoplay: roomy ? 1 : 0, controls: 0, disablekb: 1, playsinline: 1, rel: 0, iv_load_policy: 3 },
       events: {
-        onReady: e => { e.target.setVolume(50); e.target.playVideo(); remote.hidden = false; },
+        onReady: e => { e.target.setVolume(10); if (roomy) e.target.playVideo(); remote.hidden = false; },
         onStateChange: e => {
           if (e.data === YT.PlayerState.ENDED) { player.seekTo(START, true); player.playVideo(); return; }
           show(e.data === YT.PlayerState.PLAYING || e.data === YT.PlayerState.BUFFERING);

@@ -178,7 +178,21 @@
   .pull::after { content: ""; position: absolute; left: 5px; top: 72px; width: 14px; height: 14px; border-radius: 50%; background: var(--mustard); border: 3px solid #1d1e22; box-sizing: border-box; }
   .pull:hover { animation: sway 1.2s ease-in-out infinite; }
   .pull.tug { animation: tug .35s ease-out; }
-  .pull:focus-visible { outline: 2px dashed var(--mustard); outline-offset: 2px; }
+  .pull:focus-visible, .hit:focus-visible { outline: 2px dashed var(--mustard); outline-offset: 2px; }
+  /* Tapping the bulb makes it swing; tap it too often and it breaks. Pull the string too
+     often and it comes off. Both stay that way until the page is reloaded. */
+  .rig { position: relative; transform-origin: 28px 0; }
+  .rig.swing { animation: swing .7s ease-out; }
+  @keyframes swing { 25% { transform: rotate(9deg); } 55% { transform: rotate(-6deg); } 80% { transform: rotate(3deg); } }
+  .hit { position: absolute; left: 6px; top: 56px; width: 44px; height: 48px; padding: 0; background: none; border: 0; border-radius: 50%; cursor: pointer; pointer-events: auto; }
+  .bulb .broken { display: none; }
+  .bulb.smashed .whole { display: none; }
+  .bulb.smashed .broken { display: inline; }
+  .bulb.smashed .hit { cursor: default; }
+  .pull.fallen { animation: fall 1.1s cubic-bezier(.5, 0, .9, .6) forwards; pointer-events: none; }
+  @keyframes fall { 15% { transform: translateY(-6px); } to { transform: translate(-30px, 110vh) rotate(-40deg); } }
+  .shard { position: absolute; width: 9px; height: 9px; background: var(--c, #5b5560); border: 2px solid #1d1e22; clip-path: polygon(0 0, 100% 30%, 40% 100%); animation: shard 1s cubic-bezier(.5, 0, .9, .6) forwards; pointer-events: none; }
+  @keyframes shard { to { transform: translate(var(--dx), 110vh) rotate(var(--rot)); } }
   @keyframes tug { 40% { transform: translateY(16px); } 100% { transform: none; } }
   @keyframes sway { 50% { transform: rotate(4deg); } }
 
@@ -220,7 +234,7 @@
     .card, .x { transition: none; }
     .cassette.playing .hole svg { animation: none; } .cassette { transition: none; }
     .threads path { animation: none; stroke-dashoffset: 0; }
-    .pull:hover, .pull.tug { animation: none; }
+    .pull:hover, .pull.tug, .rig.swing { animation: none; }
   }
 </style>
 <script>try { if (localStorage.getItem('sw-lights') === 'on') document.documentElement.classList.add('lit'); } catch (e) {}</script>
@@ -229,16 +243,22 @@
 <div class="lamp" aria-hidden="true"></div>
 <div class="glow" aria-hidden="true"></div>
 <div class="bulb">
+  <div class="rig">
   <svg width="56" height="104" viewBox="0 0 56 104" aria-hidden="true">
     <path d="M28 0v36" stroke="#1d1e22" stroke-width="4"/><path d="M28 0v36" stroke="#9a9284" stroke-width="2"/>
     <rect x="16" y="34" width="24" height="24" rx="3" fill="#4a4d55" stroke="#1d1e22" stroke-width="3"/>
     <path d="M17 42h22M17 50h22" stroke="#1d1e22" stroke-width="2"/>
     <path d="M40 46h16" stroke="#1d1e22" stroke-width="4" stroke-linecap="round"/><path d="M41 46h14" stroke="#b3a998" stroke-width="2" stroke-linecap="round"/>
-    <path class="glass" d="M19 58c0 7-11 11-11 25a20 20 0 0 0 40 0c0-14-11-18-11-25z" stroke="#1d1e22" stroke-width="3"/>
+    <g class="whole">
+      <path class="glass" d="M19 58c0 7-11 11-11 25a20 20 0 0 0 40 0c0-14-11-18-11-25z" stroke="#1d1e22" stroke-width="3"/>
+      <path d="M15 82a13 13 0 0 1 6-12" fill="none" stroke="#ffffff73" stroke-width="3" stroke-linecap="round"/>
+    </g>
+    <path class="broken glass" d="M19 58c0 4-4 7-6 10l5 3-3 5 7-2 2 6 4-7 4 5 2-7 6 3-2-7 4-1c-3-3-6-5-6-8z" stroke="#1d1e22" stroke-width="3" stroke-linejoin="round"/>
     <path class="filament" d="M24 62v12l3-6 2 6 3-6v-6" fill="none" stroke-width="2" stroke-linejoin="round"/>
-    <path d="M15 82a13 13 0 0 1 6-12" fill="none" stroke="#ffffff73" stroke-width="3" stroke-linecap="round"/>
   </svg>
+  <button class="hit" type="button" aria-label="Tap the light bulb"></button>
   <button class="pull" type="button" aria-pressed="false" aria-label="Turn the lights on"></button>
+  </div>
 </div>
 <main class="board">
   <div class="memo">
@@ -494,22 +514,89 @@
   };
   setTimeout(misbehave, 3000);
 
-  // The light bulb: pull the string to switch the lights; they flicker a little coming on
-  const pull = document.querySelector('.pull');
+  // The light bulb. The string is a pull switch. While the light is on it flickers every
+  // 5-10 s and goes out on its own after 15-30 s; the switch is then still "on", so it takes
+  // two pulls to bring it back. Pull the string too often and it comes off; tap the bulb too
+  // often and it breaks. Both last until the page is reloaded.
+  const bulb = document.querySelector('.bulb');
+  const rig = bulb.querySelector('.rig');
+  const pull = bulb.querySelector('.pull');
+  const hit = bulb.querySelector('.hit');
   const root = document.documentElement;
+  let switchOn = root.classList.contains('lit');
+  let dead = false, broken = false, timers = [];
+
+  const later = (fn, ms) => timers.push(setTimeout(fn, ms));
+  const between = (a, b) => a + Math.random() * (b - a);
+  const light = on => root.classList.toggle('lit', on);
   const label = () => {
-    const lit = root.classList.contains('lit');
-    pull.setAttribute('aria-pressed', String(lit));
-    pull.setAttribute('aria-label', lit ? 'Turn the lights off' : 'Turn the lights on');
+    pull.setAttribute('aria-pressed', String(switchOn));
+    pull.setAttribute('aria-label', switchOn && !dead ? 'Turn the lights off' : 'Pull the light switch');
   };
-  label();
+  // A quick off-on, like a bad bulb in a film
+  const flicker = (steps, done) => steps.forEach((ms, k) => later(() => {
+    light(k % 2 === 1);
+    if (k === steps.length - 1 && done) done();
+  }, ms));
+  const settle = () => {
+    timers.forEach(clearTimeout); timers = [];
+    const on = switchOn && !dead && !broken;
+    light(on);
+    label();
+    if (!on || still) return;
+    const nextFlicker = () => later(() => { flicker([0, 90, 170, 260]); nextFlicker(); }, between(5000, 10000));
+    nextFlicker();
+    later(() => flicker([0, 80, 160, 220, 300, 340], () => { dead = true; settle(); }), between(15000, 30000));
+  };
+
+  const spam = (list, limit) => {
+    const now = Date.now();
+    list.push(now);
+    while (list.length && now - list[0] > 3000) list.shift();
+    return list.length >= limit;
+  };
+  const pulls = [], taps = [];
+
   pull.addEventListener('click', () => {
+    if (spam(pulls, 7)) {
+      pull.classList.add('fallen');
+      pull.setAttribute('aria-hidden', 'true');
+      pull.tabIndex = -1;
+      setTimeout(() => pull.remove(), 1200);
+      return;
+    }
     pull.classList.remove('tug'); void pull.offsetWidth; pull.classList.add('tug');
-    const on = !root.classList.contains('lit');
-    try { localStorage.setItem('sw-lights', on ? 'on' : 'off'); } catch (e) {}
-    if (!on || still) { root.classList.toggle('lit', on); label(); return; }
-    [0, 70, 140, 200, 320].forEach((ms, i) => setTimeout(() => { root.classList.toggle('lit', i % 2 === 0); label(); }, ms + 120));
+    switchOn = !switchOn;
+    if (switchOn) dead = false;
+    try { localStorage.setItem('sw-lights', switchOn ? 'on' : 'off'); } catch (e) {}
+    if (switchOn && !broken && !still) {
+      // coming on, it stutters first
+      timers.forEach(clearTimeout); timers = [];
+      flicker([120, 190, 260, 320, 440], settle);
+      light(false);
+    } else settle();
   });
+
+  hit.addEventListener('click', () => {
+    if (broken) return;
+    rig.classList.remove('swing'); void rig.offsetWidth; rig.classList.add('swing');
+    if (!spam(taps, 6)) return;
+    broken = true;
+    const wasLit = root.classList.contains('lit');
+    bulb.classList.add('smashed');
+    hit.setAttribute('aria-label', 'The light bulb is broken');
+    for (let k = 0; k < 7; k++) {
+      const shard = document.createElement('i');
+      shard.className = 'shard';
+      shard.style.cssText = `left:${between(10, 44)}px;top:${between(66, 96)}px;--dx:${between(-80, 80)}px;--rot:${between(-400, 400)}deg;--c:${wasLit ? '#ffe28a' : '#5b5560'};animation-delay:${k * 30}ms`;
+      rig.append(shard);
+      setTimeout(() => shard.remove(), 1400);
+    }
+    // one last spark, then dark
+    if (wasLit) { light(false); setTimeout(() => light(true), 90); setTimeout(settle, 170); }
+    else settle();
+  });
+  settle();
 
   const api = document.createElement('script');
   api.src = 'https://www.youtube.com/iframe_api';

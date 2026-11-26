@@ -28,7 +28,9 @@
   .intro { color: var(--muted); margin: 0 0 24px; }
   h2 { font-size: 13px; font-weight: 600; color: var(--muted); margin: 28px 0 0; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
   ul { list-style: none; margin: 0; padding: 0; }
-  li { padding: 16px 0; border-bottom: 1px solid var(--line); }
+  li { display: flex; gap: 16px; align-items: flex-start; padding: 16px 0; border-bottom: 1px solid var(--line); }
+  .icon { flex: none; width: 48px; height: 48px; object-fit: contain; border-radius: 10px; }
+  .icon.pixel { image-rendering: pixelated; }
   h3 { font-size: 16px; margin: 0; }
   h3 a { color: var(--text); text-decoration: none; }
   h3 a:hover { color: var(--accent); }
@@ -48,6 +50,8 @@
   <h2>destiny.gg</h2>
   <ul>
     <li>
+      <img class="icon" src="icons/glorp.png" alt="" width="48" height="48">
+      <div>
       <h3><a href="https://strawwaffle.dev/glorp/">Glorp</a></h3>
       <p>An unofficial destiny.gg app for Android: the site's chat, bigscreen in a native player, and a few things of its own.</p>
       <div class="links">
@@ -55,29 +59,39 @@
         <a href="https://github.com/StrawWaffle/glorp/releases/latest">Download</a>
         <a href="https://github.com/StrawWaffle/glorp">Source</a>
       </div>
+      </div>
     </li>
     <li>
+      <img class="icon pixel" src="icons/dgg-radio.png" alt="" width="48" height="48">
+      <div>
       <h3><a href="https://strawwaffle.dev/dgg-radio/">DGG Radio</a></h3>
       <p>A shared music station for destiny.gg. Sign in with your destiny.gg account, queue YouTube or SoundCloud tracks and take turns in the DJ rotation; everyone hears the same song at the same time.</p>
       <div class="links">
         <a href="https://strawwaffle.dev/dgg-radio/">Listen</a>
         <a href="https://github.com/StrawWaffle/dgg-radio">Source</a>
       </div>
+      </div>
     </li>
     <li>
+      <img class="icon" src="icons/dgg-karaoke.png" alt="" width="48" height="48">
+      <div>
       <h3><a href="https://strawwaffle.dev/dgg-karaoke/">DGG Karaoke</a></h3>
       <p>Karaoke in the browser for destiny.gg, built on AllKaraoke. Sing with a microphone or your phone, add community songs, and sign in with your destiny.gg account to get on the leaderboards.</p>
       <div class="links">
         <a href="https://strawwaffle.dev/dgg-karaoke/">Sing</a>
         <a href="https://github.com/StrawWaffle/dgg-karaoke">Source</a>
       </div>
+      </div>
     </li>
     <li>
+      <img class="icon" src="icons/dgg-obs-tools.png" alt="" width="48" height="48">
+      <div>
       <h3><a href="https://github.com/StrawWaffle/dgg-obs-tools">dgg-obs-tools</a></h3>
       <p>OBS browser sources that put destiny.gg, Kick, YouTube and Twitch chat on stream: an overlay of who is watching, and one combined chat. One small program, nothing to install.</p>
       <div class="links">
         <a href="https://github.com/StrawWaffle/dgg-obs-tools/releases/latest">Download</a>
         <a href="https://github.com/StrawWaffle/dgg-obs-tools">Source</a>
+      </div>
       </div>
     </li>
   </ul>
@@ -85,11 +99,14 @@
   <h2>Streaming</h2>
   <ul>
     <li>
+      <img class="icon" src="icons/obs-overlays.svg" alt="" width="48" height="48">
+      <div>
       <h3><a href="https://strawwaffle.dev/obs-overlays/">OBS overlays</a></h3>
       <p>Overlays that run straight from a URL. Bouncing text: your text bounces around like an old DVD menu, changes colour, font or effect on each bounce, and celebrates when it hits a corner.</p>
       <div class="links">
         <a href="https://strawwaffle.dev/obs-overlays/bounce/">Bouncing text</a>
         <a href="https://github.com/StrawWaffle/obs-overlays">Source</a>
+      </div>
       </div>
     </li>
   </ul>
@@ -97,18 +114,24 @@
   <h2>Data</h2>
   <ul>
     <li>
+      <img class="icon" src="icons/tracksnarkpac.png" alt="" width="48" height="48">
+      <div>
       <h3><a href="https://tracksnarkpac.netlify.app/">TrackSnarkPac</a></h3>
       <p>Who donates across political YouTube channels: superchats on Pisco, Counterpoints, The Soy Pill and Lib &amp; Learn.</p>
       <div class="links">
         <a href="https://tracksnarkpac.netlify.app/">Website</a>
       </div>
+      </div>
     </li>
     <li>
+      <img class="icon" src="icons/midterms-2026-factions.svg" alt="" width="48" height="48">
+      <div>
       <h3><a href="https://strawwaffle.dev/midterms-2026-factions/">Moderates, progressives and the 2026 wave</a></h3>
       <p>Did moderate or progressive Democrats drive the 2026 midterm wave? Every House, Senate and governor race against the 2024 result, with outside spending from FEC filings.</p>
       <div class="links">
         <a href="https://strawwaffle.dev/midterms-2026-factions/">Read it</a>
         <a href="https://github.com/StrawWaffle/midterms-2026-factions">Source</a>
+      </div>
       </div>
     </li>
   </ul>

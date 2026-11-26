@@ -142,8 +142,6 @@
   /* Ejected: the cassette slides mostly off screen and stops */
   .cassette.out { transform: translateY(calc(100% - 40px)); }
   .cassette.out .eject { transform: rotate(180deg); }
-  .credits { margin-top: 10px; font: 12px var(--type); color: var(--faint); }
-  .credits a { color: var(--soft); }
   /* Tablets and phones: the cassette sits at the end of the page instead of floating */
   @media (max-width: 999px) {
     .cassette { position: relative; right: auto; bottom: auto; margin: 44px 0 0 auto; z-index: 1; }
@@ -152,6 +150,62 @@
   }
   @media (max-width: 400px) { .cassette { margin: 44px auto 0; transform: scale(.92); transform-origin: top center; } }
 
+  /* Lights on: the same room with the light switched on. Nothing changes colour, the
+     surfaces just get lighter and the cursor's torch goes off. */
+  :root.lit { --page: #4a4253; --paper: #5c5266; --soft: #ddd4c4; --faint: #bcb09e; }
+  :root.lit .lamp { display: none; }
+  :root.lit .memo { color: #e6ddcc; }
+  :root.lit .card { box-shadow: -4px 6px 6px #0000004d; }
+  .glow {
+    position: absolute; top: 0; left: 0; right: 0; height: 1100px; pointer-events: none; opacity: 0;
+    background: radial-gradient(ellipse 900px 700px at calc(100% - 64px) 80px, #ffd98a38, #ffd98a12 45%, #0000 75%);
+  }
+  :root.lit .glow { opacity: 1; }
+
+  /* The bulb hangs from the top corner; pull its string to switch the lights */
+  .bulb { position: absolute; top: 0; right: 36px; z-index: 7; width: 56px; height: 150px; pointer-events: none; }
+  .bulb svg { display: block; overflow: visible; }
+  .bulb .glass { fill: #5b5560; transition: fill .1s; }
+  .bulb .filament { stroke: #8a8178; }
+  :root.lit .bulb .glass { fill: #ffe28a; }
+  :root.lit .bulb .filament { stroke: #e0483a; }
+  :root.lit .bulb svg { filter: drop-shadow(0 0 14px #ffd36bcc); }
+  .pull {
+    position: absolute; left: 56px; top: 45px; width: 24px; height: 92px; padding: 0; margin-left: -11px;
+    background: none; border: 0; cursor: pointer; pointer-events: auto; transform-origin: top center;
+  }
+  .pull::before { content: ""; position: absolute; left: 11px; top: 0; width: 2px; height: 74px; background: #b3a998; box-shadow: 0 0 0 1px #1d1e22; }
+  .pull::after { content: ""; position: absolute; left: 5px; top: 72px; width: 14px; height: 14px; border-radius: 50%; background: var(--mustard); border: 3px solid #1d1e22; box-sizing: border-box; }
+  .pull:hover { animation: sway 1.2s ease-in-out infinite; }
+  .pull.tug { animation: tug .35s ease-out; }
+  .pull:focus-visible { outline: 2px dashed var(--mustard); outline-offset: 2px; }
+  @keyframes tug { 40% { transform: translateY(16px); } 100% { transform: none; } }
+  @keyframes sway { 50% { transform: rotate(4deg); } }
+
+  /* The song's credit, at the bottom of the window beside the tape, only while it plays */
+  .now-playing {
+    position: fixed; right: calc(24px + 360px + 18px); bottom: 20px; z-index: 6; max-width: 330px; margin: 0;
+    text-align: right; font: 12px/1.55 var(--type); color: var(--soft);
+    text-shadow: 0 1px 2px #000, 0 0 10px #000; animation: np-in .8s ease both;
+  }
+  .now-playing[hidden] { display: none; }
+  .now-playing a { color: var(--mustard); }
+  .now-playing i { font-style: normal; color: var(--text); }
+  .now-playing .w { transition: color .1s; }
+  .now-playing .w.redact { background: #000; color: transparent; text-shadow: none; }
+  .now-playing .w.glitch { color: var(--teal); }
+  .now-playing.flick { animation: flick .45s steps(1); }
+  @keyframes np-in { from { opacity: 0; } }
+  @keyframes flick { 0% { opacity: 1; } 20% { opacity: .15; } 40% { opacity: 1; } 60% { opacity: .35; } 80% { opacity: 1; } }
+  .cassette.out { cursor: pointer; }
+  .cassette.out:hover { transform: translateY(calc(100% - 52px)); }
+
+  @media (max-width: 1100px) { .tape { right: 96px; } }
+  @media (max-width: 999px) {
+    .now-playing { position: static; max-width: none; margin: 44px 0 0; }
+    .now-playing:not([hidden]) + .cassette { margin-top: 12px; }
+  }
+
   @media (max-width: 860px) { .grid { grid-template-columns: repeat(2, 1fr); } }
   @media (max-width: 560px) {
     .board { padding: 24px 16px 32px; }
@@ -159,16 +213,33 @@
     .memo h1 { font-size: 26px; }
     .memo svg { display: none; }
     .tape { position: static; margin-bottom: 20px; }
+    .memo { padding-right: 52px; }
+    .bulb { right: 18px; transform: scale(.85); transform-origin: top right; }
   }
   @media (prefers-reduced-motion: reduce) {
     .card, .x { transition: none; }
     .cassette.playing .hole svg { animation: none; } .cassette { transition: none; }
     .threads path { animation: none; stroke-dashoffset: 0; }
+    .pull:hover, .pull.tug { animation: none; }
   }
 </style>
+<script>try { if (localStorage.getItem('sw-lights') === 'on') document.documentElement.classList.add('lit'); } catch (e) {}</script>
 </head>
 <body>
 <div class="lamp" aria-hidden="true"></div>
+<div class="glow" aria-hidden="true"></div>
+<div class="bulb">
+  <svg width="56" height="104" viewBox="0 0 56 104" aria-hidden="true">
+    <path d="M28 0v36" stroke="#1d1e22" stroke-width="4"/><path d="M28 0v36" stroke="#9a9284" stroke-width="2"/>
+    <rect x="16" y="34" width="24" height="24" rx="3" fill="#4a4d55" stroke="#1d1e22" stroke-width="3"/>
+    <path d="M17 42h22M17 50h22" stroke="#1d1e22" stroke-width="2"/>
+    <path d="M40 46h16" stroke="#1d1e22" stroke-width="4" stroke-linecap="round"/><path d="M41 46h14" stroke="#b3a998" stroke-width="2" stroke-linecap="round"/>
+    <path class="glass" d="M19 58c0 7-11 11-11 25a20 20 0 0 0 40 0c0-14-11-18-11-25z" stroke="#1d1e22" stroke-width="3"/>
+    <path class="filament" d="M24 62v12l3-6 2 6 3-6v-6" fill="none" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M15 82a13 13 0 0 1 6-12" fill="none" stroke="#ffffff73" stroke-width="3" stroke-linecap="round"/>
+  </svg>
+  <button class="pull" type="button" aria-pressed="false" aria-label="Turn the lights on"></button>
+</div>
 <main class="board">
   <div class="memo">
     <svg width="42" height="42" viewBox="0 0 44 44" fill="none" stroke="#ece3d2" stroke-width="1.6" aria-hidden="true"><circle cx="22" cy="22" r="19"/><circle cx="22" cy="22" r="11"/><path d="M22 3v38M5 30h34"/><circle cx="22" cy="22" r="3" fill="#ff8a6e" stroke="none"/></svg>
@@ -261,12 +332,10 @@
     </li>
   </ul>
 
-  <footer>
-    Report sightings: <a href="https://github.com/StrawWaffle">github.com/StrawWaffle</a>
-    <div class="credits">Music: &ldquo;Utopia Finale&rdquo; by Cristobal Tapia de Veer, from <i>Utopia</i> (Original Television Soundtrack), Silva Screen Records, 2013. Played from <a href="https://www.youtube.com/watch?v=9dqV03K0brQ">YouTube</a>.</div>
-  </footer>
+  <footer>Report sightings: <a href="https://github.com/StrawWaffle">github.com/StrawWaffle</a></footer>
   <svg class="threads" aria-hidden="true"></svg>
 </main>
+<p class="now-playing" hidden>Music: &ldquo;Utopia Finale&rdquo; by Cristobal Tapia de Veer, from <i>Utopia</i> (Original Television Soundtrack), Silva Screen Records, 2013. Played from <a href="https://www.youtube.com/watch?v=9dqV03K0brQ">YouTube</a>.</p>
 <section class="cassette" aria-label="Music: Utopia Finale">
   <i class="screw tl"></i><i class="screw tr"></i><i class="screw bl"></i><i class="screw br"></i>
   <div class="label">
@@ -321,7 +390,7 @@
     card.addEventListener('click', e => { if (!e.target.closest('a')) card.classList.toggle('open'); });
   });
 
-  // The tape: "Utopia Finale" from YouTube, from 25 s in, looping back to 25 s, at 10% volume.
+  // The tape: "Utopia Finale" from YouTube, from 25 s in, looping back to 25 s, at 5% volume.
   // It tries to start on its own; if the browser blocks that, either button starts it.
   const VIDEO = '9dqV03K0brQ', START = 25;
   const vhs = document.querySelector('.cassette');
@@ -329,6 +398,7 @@
   const key = vhs.querySelector('.key');
   const counter = vhs.querySelector('.counter');
   const eject = vhs.querySelector('.eject');
+  const credit = document.querySelector('.now-playing');
   let player, playing = false;
   // Beside the board there's only room for the tape on wide screens. On smaller desktops it
   // starts ejected (peeking from the corner) and doesn't start on its own; tablets and phones
@@ -343,6 +413,7 @@
     for (const b of [remote, key]) b.setAttribute('aria-pressed', String(on));
     remote.innerHTML = on ? '&#10074;&#10074; stop the tape' : '&#9654; play the tape';
     key.innerHTML = on ? '&#10074;&#10074; stop' : '&#9654; play';
+    credit.hidden = !on;
   };
   const toggle = () => {
     if (!player) return;
@@ -353,6 +424,10 @@
   };
   remote.addEventListener('click', toggle);
   key.addEventListener('click', toggle);
+  // While ejected, the bit of tape peeking out of the corner puts it back and plays it
+  vhs.addEventListener('click', e => {
+    if (vhs.classList.contains('out') && !e.target.closest('button')) toggle();
+  });
   // Ejecting slides the tape away and stops it; pressing again puts it back
   eject.addEventListener('click', () => {
     const out = vhs.classList.toggle('out');
@@ -366,7 +441,7 @@
       videoId: VIDEO, width: 200, height: 200,
       playerVars: { start: START, autoplay: roomy ? 1 : 0, controls: 0, disablekb: 1, playsinline: 1, rel: 0, iv_load_policy: 3 },
       events: {
-        onReady: e => { e.target.setVolume(10); if (roomy) e.target.playVideo(); remote.hidden = false; },
+        onReady: e => { e.target.setVolume(5); if (roomy) e.target.playVideo(); remote.hidden = false; },
         onStateChange: e => {
           if (e.data === YT.PlayerState.ENDED) { player.seekTo(START, true); player.playVideo(); return; }
           show(e.data === YT.PlayerState.PLAYING || e.data === YT.PlayerState.BUFFERING);
@@ -379,6 +454,63 @@
     const t = Math.floor(player.getCurrentTime() || START);
     counter.textContent = `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`;
   }, 500);
+  // Now and then the credit misbehaves: a word scrambles, gets redacted, or the line flickers
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const words = [];
+  (function wrap(node) {
+    for (const child of [...node.childNodes]) {
+      if (child.nodeType === 3) {
+        const frag = document.createDocumentFragment();
+        for (const part of child.textContent.split(/(\s+)/)) {
+          if (!part.trim()) { frag.append(part); continue; }
+          const w = document.createElement('span');
+          w.className = 'w'; w.textContent = part; words.push(w); frag.append(w);
+        }
+        child.replaceWith(frag);
+      } else wrap(child);
+    }
+  })(credit);
+  const GLYPHS = '#%&@$/<>?!01';
+  const misbehave = () => {
+    setTimeout(misbehave, 3500 + Math.random() * 5000);
+    if (still || credit.hidden) return;
+    const w = words[Math.floor(Math.random() * words.length)];
+    const roll = Math.random();
+    if (roll < .45) {
+      const real = w.textContent;
+      let n = 0;
+      w.classList.add('glitch');
+      const t = setInterval(() => {
+        w.textContent = [...real].map(c => Math.random() < .6 ? GLYPHS[Math.floor(Math.random() * GLYPHS.length)] : c).join('');
+        if (++n > 4) { clearInterval(t); w.textContent = real; w.classList.remove('glitch'); }
+      }, 70);
+    } else if (roll < .8) {
+      w.classList.add('redact');
+      setTimeout(() => w.classList.remove('redact'), 700);
+    } else {
+      credit.classList.add('flick');
+      setTimeout(() => credit.classList.remove('flick'), 450);
+    }
+  };
+  setTimeout(misbehave, 3000);
+
+  // The light bulb: pull the string to switch the lights; they flicker a little coming on
+  const pull = document.querySelector('.pull');
+  const root = document.documentElement;
+  const label = () => {
+    const lit = root.classList.contains('lit');
+    pull.setAttribute('aria-pressed', String(lit));
+    pull.setAttribute('aria-label', lit ? 'Turn the lights off' : 'Turn the lights on');
+  };
+  label();
+  pull.addEventListener('click', () => {
+    pull.classList.remove('tug'); void pull.offsetWidth; pull.classList.add('tug');
+    const on = !root.classList.contains('lit');
+    try { localStorage.setItem('sw-lights', on ? 'on' : 'off'); } catch (e) {}
+    if (!on || still) { root.classList.toggle('lit', on); label(); return; }
+    [0, 70, 140, 200, 320].forEach((ms, i) => setTimeout(() => { root.classList.toggle('lit', i % 2 === 0); label(); }, ms + 120));
+  });
+
   const api = document.createElement('script');
   api.src = 'https://www.youtube.com/iframe_api';
   document.head.append(api);

@@ -236,12 +236,32 @@
     .threads path { animation: none; stroke-dashoffset: 0; }
     .pull:hover, .pull.tug, .rig.swing { animation: none; }
   }
+
+  /* Secret ink: lore from the Destiny Lore Iceberg (wiki.destiny.gg), written on the
+     background and only visible inside the torch's light. The deeper you scroll, the
+     deeper the tier. */
+  body { position: relative; isolation: isolate; }
+  .ink {
+    position: absolute; inset: 0; z-index: -1; pointer-events: none; overflow: hidden;
+    --px: -9999px; --py: -9999px;
+    -webkit-mask-image: radial-gradient(circle 250px at var(--px) var(--py), #000 0, #000 30%, #0000 100%);
+            mask-image: radial-gradient(circle 250px at var(--px) var(--py), #000 0, #000 30%, #0000 100%);
+  }
+  .ink span {
+    position: absolute; white-space: nowrap; transform: rotate(var(--r));
+    font: 600 var(--s, 21px) var(--hand); color: #a8efe3; opacity: .7; text-shadow: 0 0 7px #5fe6d080;
+  }
+  .ink .tier { font: 12px var(--type); letter-spacing: 4px; text-transform: uppercase; opacity: .4; }
+  :root.lit .ink { display: none; }
+  @media (hover: none), (pointer: coarse) { .ink { display: none; } }
 </style>
 <script>try { if (localStorage.getItem('sw-lights') === 'on') document.documentElement.classList.add('lit'); } catch (e) {}</script>
 </head>
 <body>
 <div class="lamp" aria-hidden="true"></div>
 <div class="glow" aria-hidden="true"></div>
+<!-- Secret ink: the Destiny Lore Iceberg, https://wiki.destiny.gg/view/Destiny_Lore_Iceberg -->
+<div class="ink" aria-hidden="true"></div>
 <div class="bulb">
   <div class="rig">
   <svg width="56" height="104" viewBox="0 0 56 104" aria-hidden="true">
@@ -392,6 +412,78 @@
   const fine = matchMedia('(hover: hover) and (pointer: fine)').matches;
 
   if (fine) {
+    const ink = document.querySelector('.ink');
+    let cx = -9999, cy = -9999;
+    const shine = () => {
+      ink.style.setProperty('--px', cx + scrollX + 'px');
+      ink.style.setProperty('--py', cy + scrollY + 'px');
+    };
+    addEventListener('pointermove', e => { cx = e.clientX; cy = e.clientY; shine(); });
+    addEventListener('scroll', shine, { passive: true });
+
+    // Tiers from the top of the iceberg down, a handful of the tamer entries each.
+    const ICEBERG = [
+      ['Normie', ['Twitch streamer', 'YouTube personality', 'Debates', 'Video games', 'Philosophy', 'Politics']],
+      ['YouTube Fan', ['Nebraska Steve', 'StarCraft 2', 'JonTron debate', 'League of Legends', 'Piano', 'Composition challenges', 'D&D campaigns', 'Atlanta canvassing', 'Has a site (destiny.gg)', 'Ardent capitalist']],
+      ['DGG-er', ['Spoilergate', 'The DT Podcast', 'Rajj Royale', 'Omniliberalism', 'NFL long snapper Taybor Pepper', 'positions.destiny.gg', 'Gnoming', 'Music school dropout (saxophone)', 'Casino job', 'Carpet cleaning', 'Bestiny of Destiny', 'Destiny & Friends', 'Food takes', 'Orbiters', 'Methstiny', 'GODSTINY', 'Derpstiny']],
+      ['Starcraft 2 Semi-Pro', ['Baneling analogy', 'PEPE vs YEE', 'Middle guy', 'Meme squaring', 'DGG4LYFE', 'Visited by the FBI', 'The Dark Triad', '"...in a video game"', '"Lit, you say?"', '2/7', 'The Blue Coat', 'MrMouton vs Destiny rap battle', 'Twitter squirrel', 'Cardboard', "He's still drunk", 'The Portal Debate', 'Shoe-tying photo', 'Ford Focus RS', 'BBDGG', 'essay_writer', 'Doug of 8k', 'Cancer 5v5s', 'Doublelift coaching session', '"you could\'ve played that better"', 'Balconygate', 'Tinder Moot', 'cx tech support', '-$74', '"Where are Dan\'s logs?"', 'Looping', 'HE MISSPOKE', '1024 hour bans', 'Dono lady', 'Ministry of Win', 'The Intelligence', 'RightToBearArmsLOL', 'Destiny Realtalks']],
+      ['DGG-en', ["Dan's Hawaii story", 'BasedGod OverRustle NoTears', 'Bombjin', 'The Day9 story', 'BAR BAR BAR', "Grandma's dogs", 'Planetary Annihilation catfish', 'Dominick the Donkey', "Theresa's dump truck", 'Roof repair stream', 'Kicked out of AP exam', "McDonald's job", 'nnn debates (DO NOT ENGAGE)', 'The Koibu story', 'AWAP / Yumping', 'moutonmerch.com', 'strims / angelthump', 'Atlas rage clip', 'Meta greentexting', '300 word essay due in 5 days monkaS', '"I have foreseen"', 'Infestor hit squad', 'Win against Bomber', '"Destiny" by Ken Ashcorp', 'DAS keyboard', 'Diablo 3 launch with PhantomLord', 'Destiny is a Pokemon master', 'Naniwa lost jacket', 'RATZ STAY RATZ', 'Forcefields', 'Bonsai Kitten email', 'Ko names Derpstiny', 'Monday Mail', 'cane']],
+      ['Offline Chatter', ['A MILLI A MILLI A MILLI', 'True knowledge of the secret memes (REE)', 'stank created PEPE vs YEE', 'LIVE AngelThump', 'BODGAY', 'Incomprehensible Gleeb debate', 'justin to Twitch transition', 'Homeless sandwich story', 'Wur9y.gif', 'raidcall', 'Shavedstiny', 'BRAEN GAENG']],
+      ['Heroic Doser', ['Carkinposting', 'nuke.sys', "bullettrain's whereabouts (DO NOT RESEARCH)", 'Notfather', 'Gravy Gnome', 'PEPE vs YEE is a psyop', 'Horseshoe theory was always right', "Steve's real height (TURN AWAY NOW)", "Dan's datacenters", 'The Couch (ALWAYS HAS BEEN)', 'The Two Mouton Theory', 'Hell is a never-ending debate with Destiny', "The true identity of Destiny's friend"]],
+    ];
+    const rnd = (a, b) => a + Math.random() * (b - a);
+    const shuffle = xs => { xs = [...xs]; for (let i = xs.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [xs[i], xs[j]] = [xs[j], xs[i]]; } return xs; };
+    // Each phrase goes in a free spot of its tier's band: random tries, kept only where it
+    // doesn't touch the cards, the memo, the footer, the bulb or another phrase.
+    const write = () => {
+      const W = ink.offsetWidth, H = ink.offsetHeight, band = H / ICEBERG.length;
+      const box = ink.getBoundingClientRect();
+      const taken = [...document.querySelectorAll('.card, .memo, footer, .tape, .bulb, .cassette')].map(el => {
+        const r = el.getBoundingClientRect();
+        return { l: r.left - box.left - 12, t: r.top - box.top - 12, r: r.right - box.left + 12, b: r.bottom - box.top + 12 };
+      });
+      const free = q => q.l >= 4 && q.r <= W - 4 && taken.every(o => q.r < o.l || q.l > o.r || q.b < o.t || q.t > o.b);
+      const place = (span, top, height) => {
+        ink.append(span);
+        const w = span.offsetWidth, h = span.offsetHeight;
+        for (let i = 0; i < 40; i++) {
+          const x = rnd(4, W - w - 4), y = rnd(top, top + height - h);
+          const q = { l: x - 6, t: y - 4, r: x + w + 6, b: y + h + 4 };
+          if (free(q)) {
+            span.style.left = x + 'px';
+            span.style.top = y + 'px';
+            taken.push(q);
+            return true;
+          }
+        }
+        span.remove();
+        return false;
+      };
+      ink.replaceChildren();
+      ICEBERG.forEach(([tier, entries], t) => {
+        const top = t * band;
+        const label = document.createElement('span');
+        label.className = 'tier';
+        label.textContent = `— ${tier} —`;
+        label.style.setProperty('--r', rnd(-2, 2) + 'deg');
+        place(label, top, Math.min(band, 60));
+        let kept = 0;
+        for (const text of shuffle(entries)) {
+          if (kept >= 9) break;
+          const span = document.createElement('span');
+          span.textContent = text;
+          span.style.setProperty('--r', rnd(-6, 6) + 'deg');
+          span.style.setProperty('--s', (text.length > 26 ? rnd(15, 18) : rnd(18, 24)) + 'px');
+          if (place(span, top, band)) kept++;
+        }
+      });
+    };
+    let wrote = 0;
+    const rewrite = () => { clearTimeout(wrote); wrote = setTimeout(write, 200); };
+    addEventListener('resize', rewrite);
+    addEventListener('load', write);
+    document.fonts?.ready.then(write);
+    write();
     addEventListener('pointermove', e => {
       document.body.style.setProperty('--mx', e.clientX + 'px');
       document.body.style.setProperty('--my', e.clientY + 'px');
